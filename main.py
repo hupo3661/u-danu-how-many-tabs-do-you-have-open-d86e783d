@@ -87,6 +87,21 @@ def main() -> int:
     # The bytes on disk must also pass the same explicit validation as
     # the in-memory text, not just an equality check.
     validate_entry_text(written)
+    # Byte-size and round-trip check: the file on disk must occupy
+    # exactly as many bytes as the UTF-8 encoding of the entry text
+    # (which catches a stray BOM, trailing newline or extra bytes that
+    # a text-mode read could hide), and parsing the written digits
+    # back to an integer must reproduce TAB_COUNT exactly.
+    expected_bytes = len(text.encode("utf-8"))
+    actual_bytes = os.path.getsize(path)
+    if actual_bytes != expected_bytes:
+        raise SystemExit(
+            f"invalid entry size on disk: expected {expected_bytes} bytes, found {actual_bytes}"
+        )
+    if int(written) != TAB_COUNT:
+        raise SystemExit(
+            f"invalid entry round-trip: {written!r} parses to {int(written)}, not TAB_COUNT {TAB_COUNT}"
+        )
     return 0
 
 
